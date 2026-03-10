@@ -1,8 +1,8 @@
 // server/controllers/adminController.js
-const bcrypt = require('bcrypt');
+//const bcrypt = require('bcrypt');
 const jwt    = require('jsonwebtoken');
 const db     = require('../db');
-
+const bcrypt = require('bcryptjs');
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
