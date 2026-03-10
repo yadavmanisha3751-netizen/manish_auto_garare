@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Bookings — Manish Auto Garage</title>
+<link rel="stylesheet" href="css/style.css">
+<!-- Cashfree JS SDK -->
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+</head>
+<body>
+
+<nav class="navbar no-print">
+  <a href="/" class="brand">🏍️ Manish Auto <span>Garage</span></a>
+  <div class="nav-links">
+    <a href="/booking.html">+ New Booking</a>
+    <a href="tel:+918828133876" style="color:#4ade80;font-weight:700">📞 Call</a>
+    <a href="#" onclick="Auth.logout();location.href='/login.html'">Logout</a>
+  </div>
+</nav>
+
+<div class="page">
+<div class="container" style="padding-top:20px">
+
+  <!-- Welcome bar -->
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div>
+      <h2 style="color:#1a1a2e;margin-bottom:3px">My Bookings</h2>
+      <div class="text-muted" id="userWelcome">Loading...</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="tel:+918828133876" class="btn btn-green">📞 Call Garage</a>
+      <a href="https://maps.google.com/?q=Near+Road+No+22,+Wagle+Circle,+Opposite+Spraytech+Company,+Thane+West+400604" target="_blank" class="btn btn-blue">📍 Directions</a>
+      <a href="/booking.html" class="btn btn-primary">+ New Booking</a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-box"><div class="num" id="stTotal">—</div><div class="lbl">Total</div></div>
+    <div class="stat-box"><div class="num" id="stPending" style="color:#856404">—</div><div class="lbl">Pending</div></div>
+    <div class="stat-box"><div class="num" id="stDone" style="color:#155724">—</div><div class="lbl">Completed</div></div>
+    <div class="stat-box"><div class="num" id="stPaid" style="color:#27ae60">—</div><div class="lbl">Paid</div></div>
+  </div>
+
+  <!-- Bookings list -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+      <div style="font-weight:700;font-size:1.1rem;color:#1a1a2e">📋 Service History</div>
+      <button onclick="loadBookings()" class="btn btn-outline btn-sm">🔄 Refresh</button>
+    </div>
+    <div id="bookingsList">
+      <div class="text-muted text-center" style="padding:30px">Loading your bookings...</div>
+    </div>
+  </div>
+
+  <!-- Garage location card -->
+  <div class="card no-print">
+    <div class="section-title">📍 Garage Location</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <a href="tel:+918828133876" class="contact-btn contact-btn-call">
+        📞 <div><strong>Call Admin</strong><br><span style="font-size:0.78rem">+91 88281 33876</span></div>
+      </a>
+      <a href="https://maps.google.com/?q=Near+Road+No+22,+Wagle+Circle,+Opposite+Spraytech+Company,+Thane+West+400604" target="_blank" class="contact-btn contact-btn-map">
+        📍 <div><strong>GPS Directions</strong><br><span style="font-size:0.78rem">Wagle Circle, Thane West</span></div>
+      </a>
+    </div>
+    <iframe
+      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3767.5!2d72.9781!3d19.2045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7b8a7e7f5f5f5%3A0x0!2sWagle+Circle%2C+Thane+West%2C+Maharashtra+400604!5e0!3m2!1sen!2sin!4v1700000000001!5m2!1sen!2sin"
+      class="map-embed" allowfullscreen loading="lazy">
+    </iframe>
+  </div>
+
+</div>
+</div>
+
+<!-- Invoice Modal -->
+<div class="modal-bg" id="invoiceModal">
+  <div class="modal-box" style="max-width:780px">
+    <div class="modal-header no-print">
+      <strong style="font-size:1.1rem">Tax Invoice</strong>
+      <button class="modal-close" onclick="closeModal('invoiceModal')">✕</button>
+    </div>
+    <div id="invoiceBody"></div>
+    <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap" class="no-print">
+      <button onclick="printInvoice()" class="btn btn-outline">🖨️ Print</button>
+      <button onclick="downloadInvoice()" class="btn btn-primary">⬇️ Download PDF</button>
+      <button onclick="closeModal('invoiceModal')" class="btn btn-outline">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  if (!Auth.isLoggedIn()) location.href = '/login.html';
+
+  let allBookings = [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const u = Auth.getUser();
+    if (u) document.getElementById('userWelcome').textContent = 'Welcome back, ' + u.full_name + ' 👋';
+    loadBookings();
+  });
+
+  async function loadBookings() {
+    const { ok, data } = await api('/bookings/my');
+    if (!ok) { toast(data.message || 'Failed to load', 'error'); return; }
+
+    allBookings = data.bookings;
+
+    // Stats
+    document.getElementById('stTotal').textContent   = allBookings.length;
+    document.getElementById('stPending').textContent = allBookings.filter(b => b.status === 'Pending').length;
+    document.getElementById('stDone').textContent    = allBookings.filter(b => b.status === 'Completed').length;
+    document.getElementById('stPaid').textContent    = allBookings.filter(b => b.payment_status === 'Paid').length;
+
+    renderBookings();
+  }
+
+  function renderBookings() {
+    const el = document.getElementById('bookingsList');
+    if (!allBookings.length) {
+      el.innerHTML = `<div class="text-center" style="padding:40px">
+        <div style="font-size:3rem">🏍️</div>
+        <p class="text-muted" style="margin:10px 0">No bookings yet.</p>
+        <a href="/booking.html" class="btn btn-primary">Book Your First Service</a>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = allBookings.map(b => {
+      const svcNames  = (b.services || []).map(s => s.service_name).join(', ') || 'Service';
+      const isPaid    = b.payment_status === 'Paid';
+      const hasBill   = !!b.bill_amount;
+      const amount    = hasBill ? b.bill_amount : b.totalEstimate;
+      const amtLabel  = hasBill ? 'Final Bill' : 'Estimate';
+
+      return `
+      <div style="border:1px solid #e0e0e0;border-radius:8px;padding:15px;margin-bottom:12px;background:#fafafa">
+
+        <!-- Top row: ID + status + payment -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px">
+          <span class="text-muted" style="font-size:0.78rem">Booking #${b.id}</span>
+          ${badgeHtml(b.status)}
+          <span class="badge ${isPaid ? 'badge-paid' : 'badge-unpaid'}">${isPaid ? '✓ Paid' : '⏳ Unpaid'}</span>
+        </div>
+
+        <!-- Services -->
+        <div style="font-weight:700;margin-bottom:4px">${svcNames}</div>
+
+        <!-- Vehicle + Date -->
+        <div class="text-muted" style="font-size:0.85rem;margin-bottom:8px">
+          🏍️ ${b.vehicle_year} ${b.vehicle_make} ${b.vehicle_model} (${b.vehicle_plate})<br>
+          📅 ${fdate(b.booking_date)} at ${ftime(b.booking_time)}
+          ${b.notes ? `<br>📝 ${b.notes}` : ''}
+        </div>
+
+        <!-- Amount + Buttons -->
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div>
+            <span style="font-size:1.1rem;font-weight:800;color:${hasBill ? '#27ae60' : '#e8400a'}">${inr(amount)}</span>
+            <span class="text-muted" style="font-size:0.75rem;margin-left:4px">${amtLabel}</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${hasBill ? `<button onclick="showInvoice(${b.id})" class="btn btn-outline btn-sm">🧾 Invoice</button>` : ''}
+            ${!isPaid ? `<button onclick="payNow(${b.id})" class="btn btn-green btn-sm">💳 Pay ₹${parseFloat(amount).toFixed(0)}</button>` : ''}
+            ${b.status === 'Pending' ? `<button onclick="cancelBooking(${b.id})" class="btn btn-red btn-sm">Cancel</button>` : ''}
+            <a href="tel:+918828133876" class="btn btn-outline btn-sm" style="text-decoration:none;color:#27ae60;border-color:#27ae60">📞 Call</a>
+          </div>
+        </div>
+
+      </div>`;
+    }).join('');
+  }
+
+  // ── Cashfree Payment ──────────────────────────────────────
+  async function payNow(bookingId) {
+    toast('Setting up payment...', 'info');
+
+    const { ok, data } = await api(`/bookings/${bookingId}/pay`, 'POST');
+    if (!ok) { toast(data.message || 'Payment setup failed', 'error'); return; }
+
+    // Dev mode (Cashfree not configured)
+    if (data.devMode) {
+      if (confirm(`DEV MODE: Simulate payment of ${inr(data.amount)}?\n\n(In production, real Cashfree window opens)`)) {
+        const { ok: vok, data: vdata } = await api(`/bookings/${bookingId}/verify-payment`, 'POST', { devMode: true });
+        if (vok) { toast('Payment successful! ✅', 'success'); loadBookings(); }
+        else toast(vdata.message, 'error');
+      }
+      return;
+    }
+
+    // Real Cashfree payment
+    const cashfree = Cashfree({ mode: 'sandbox' }); // change to 'production' for live
+    const checkoutOptions = {
+      paymentSessionId: data.paymentSessionId,
+      redirectTarget:   '_modal'
+    };
+
+    try {
+      const result = await cashfree.checkout(checkoutOptions);
+
+      if (result.error) {
+        toast('Payment failed: ' + result.error.message, 'error');
+        return;
+      }
+      if (result.redirect) {
+        // Payment needs redirect — handled by return_url
+        return;
+      }
+      if (result.paymentDetails) {
+        // Verify with server
+        const { ok: vok, data: vdata } = await api(`/bookings/${bookingId}/verify-payment`, 'POST', {
+          orderId:   data.orderId,
+          paymentId: result.paymentDetails.paymentMessage
+        });
+        if (vok) { toast('Payment successful! ✅', 'success'); loadBookings(); }
+        else toast(vdata.message || 'Verification failed', 'error');
+      }
+    } catch (err) {
+      toast('Payment error: ' + err.message, 'error');
+    }
+  }
+
+  // ── Invoice ────────────────────────────────────────────────
+  function showInvoice(bookingId) {
+    const b = allBookings.find(x => x.id === bookingId);
+    if (!b) return;
+    document.getElementById('invoiceBody').innerHTML = buildInvoice(b, Auth.getUser());
+    document.getElementById('invoiceModal').classList.add('open');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  function printInvoice() {
+    window.print(); // CSS hides .no-print elements
+  }
+
+  function downloadInvoice() {
+    // Open invoice in new tab → user can Ctrl+P → Save as PDF
+    const html = document.getElementById('invoiceBody').innerHTML;
+    const win  = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head>
+      <title>Invoice — Manish Auto Garage</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 30px; color: #1a1a2e; background: white; }
+        table { width:100%; border-collapse:collapse; }
+        th { background:#1a1a2e; color:white; padding:8px 10px; text-align:left; }
+        td { padding:8px 10px; border-bottom:1px solid #eee; }
+        @media print { body { padding:10px; } }
+      </style>
+    </head><body>
+      ${html}
+      <script>setTimeout(()=>{ window.print(); }, 500);<\/script>
+    </body></html>`);
+    win.document.close();
+  }
+
+  // ── Cancel booking ─────────────────────────────────────────
+  async function cancelBooking(id) {
+    if (!confirm('Cancel this booking?')) return;
+    const { ok, data } = await api(`/bookings/${id}/cancel`, 'PUT');
+    if (ok) { toast('Booking cancelled', 'success'); loadBookings(); }
+    else toast(data.message, 'error');
+  }
+
+  // Close modal on outside click
+  document.getElementById('invoiceModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal('invoiceModal');
+  });
+</script>
+</body>
+</html>

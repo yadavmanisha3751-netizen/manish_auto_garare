@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Bookings — Manish Auto Garage Admin</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav class="navbar no-print">
+  <a href="/admin/dashboard.html" class="brand">🔧 Admin — Manish Auto <span>Garage</span></a>
+  <div class="nav-links">
+    <a href="/admin/dashboard.html">Dashboard</a>
+    <a href="tel:+918828133876" style="color:#4ade80">📞 Call</a>
+    <a href="#" onclick="Auth.logoutAdmin();location.href='/admin/login.html'">Logout</a>
+  </div>
+</nav>
+
+<div class="page">
+<div class="container" style="padding-top:20px">
+
+  <h2 style="color:#1a1a2e;margin-bottom:15px">Manage Bookings</h2>
+
+  <!-- Filters -->
+  <div class="card no-print" style="padding:12px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input type="text" id="searchQ" placeholder="Search by name, phone, plate..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem" oninput="loadBookings()">
+      <select id="filterStatus" onchange="loadBookings()" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:0.9rem">
+        <option value="All">All Status</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+      <button onclick="loadBookings()" class="btn btn-outline btn-sm">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+    <table class="tbl" id="bookingsTbl">
+      <thead><tr>
+        <th>#</th>
+        <th>Customer</th>
+        <th>Services</th>
+        <th>Vehicle</th>
+        <th>Date / Time</th>
+        <th>Status</th>
+        <th>Payment</th>
+        <th>Bill</th>
+        <th>Actions</th>
+      </tr></thead>
+      <tbody id="bookingsBody">
+        <tr><td colspan="9" class="text-center text-muted" style="padding:30px">Loading...</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Bill Modal -->
+<div class="modal-bg" id="billModal">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-header">
+      <strong>Generate Bill</strong>
+      <button class="modal-close" onclick="closeModal('billModal')">✕</button>
+    </div>
+    <div id="billModalBody"></div>
+  </div>
+</div>
+
+<!-- Invoice Modal -->
+<div class="modal-bg" id="invoiceModal">
+  <div class="modal-box" style="max-width:780px">
+    <div class="modal-header no-print">
+      <strong>Tax Invoice</strong>
+      <button class="modal-close" onclick="closeModal('invoiceModal')">✕</button>
+    </div>
+    <div id="invoiceBody"></div>
+    <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap" class="no-print">
+      <button onclick="window.print()" class="btn btn-outline">🖨️ Print</button>
+      <button onclick="downloadInvoice()" class="btn btn-primary">⬇️ Download PDF</button>
+      <button onclick="closeModal('invoiceModal')" class="btn btn-outline">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+  if (!Auth.isAdmin()) location.href = '/admin/login.html';
+
+  let bookings = [];
+
+  loadBookings();
+
+  async function loadBookings() {
+    const q      = document.getElementById('searchQ').value.trim();
+    const status = document.getElementById('filterStatus').value;
+    const params = new URLSearchParams();
+    if (q)               params.set('q', q);
+    if (status !== 'All') params.set('status', status);
+
+    const { ok, data } = await api('/admin/bookings?' + params.toString(), 'GET', null, true);
+    if (!ok) { toast('Failed to load', 'error'); return; }
+
+    bookings = data.bookings;
+    renderTable();
+  }
+
+  function renderTable() {
+    const body = document.getElementById('bookingsBody');
+    if (!bookings.length) {
+      body.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:30px">No bookings found</td></tr>';
+      return;
+    }
+    body.innerHTML = bookings.map(b => {
+      const svcNames = (b.services || []).map(s => s.name || s.service_name).join('<br>') || '—';
+      const hasBill  = !!b.bill_amount;
+      const isPaid   = b.payment_status === 'Paid';
+      return `
+      <tr>
+        <td style="font-size:0.82rem">#${b.id}<br><span class="text-muted">${fdate(b.created_at)}</span></td>
+        <td><strong>${b.full_name}</strong><br>
+          <a href="tel:${b.phone}" style="color:#27ae60;font-size:0.82rem;text-decoration:none">📞 ${b.phone}</a>
+        </td>
+        <td style="font-size:0.82rem;max-width:180px">${svcNames}</td>
+        <td style="font-size:0.82rem">${b.vehicle_type}<br>${b.vehicle_year} ${b.vehicle_make} ${b.vehicle_model}<br><strong>${b.vehicle_plate}</strong></td>
+        <td style="font-size:0.82rem">${fdate(b.booking_date)}<br>${ftime(b.booking_time)}</td>
+        <td>
+          ${badgeHtml(b.status)}<br>
+          <select onchange="changeStatus(${b.id}, this.value)" style="margin-top:4px;font-size:0.75rem;padding:2px 4px;border:1px solid #ddd;border-radius:4px">
+            <option value="">Change...</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </td>
+        <td>
+          <span class="badge ${isPaid ? 'badge-paid' : 'badge-unpaid'}">${b.payment_status}</span>
+          ${b.cashfree_payment_id ? `<br><span class="text-muted" style="font-size:0.7rem">${b.cashfree_payment_id}</span>` : ''}
+        </td>
+        <td style="font-size:0.85rem">
+          ${hasBill ? `<span style="color:#27ae60;font-weight:700">${inr(b.bill_amount)}</span>` : `<span class="text-muted">${inr(b.totalEstimate)} est.</span>`}
+          ${b.notes ? `<br><span class="text-muted" style="font-size:0.72rem">${b.notes.slice(0,40)}</span>` : ''}
+        </td>
+        <td>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button onclick="openBillModal(${b.id})" class="btn btn-primary btn-sm">${hasBill ? '✏️ Edit Bill' : '🧾 Add Bill'}</button>
+            ${hasBill ? `<button onclick="showInvoice(${b.id})" class="btn btn-outline btn-sm">📄 Invoice</button>` : ''}
+            <button onclick="deleteBooking(${b.id})" class="btn btn-red btn-sm">🗑 Delete</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Status change ──────────────────────────────────────────
+  async function changeStatus(id, status) {
+    if (!status) return;
+    const { ok, data } = await api(`/admin/bookings/${id}/status`, 'PUT', { status }, true);
+    if (ok) { toast(`Status updated: ${status}`, 'success'); loadBookings(); }
+    else toast(data.message, 'error');
+  }
+
+  // ── Bill Modal ─────────────────────────────────────────────
+  function openBillModal(id) {
+    const b = bookings.find(x => x.id === id);
+    if (!b) return;
+    const svcList = (b.services || []).map(s =>
+      `<li>${s.name || s.service_name} — <strong>${inr(s.price_at_booking)}</strong></li>`).join('');
+
+    document.getElementById('billModalBody').innerHTML = `
+      <div style="background:#f9f9f9;padding:10px;border-radius:6px;margin-bottom:15px">
+        <strong>${b.full_name}</strong> — ${b.vehicle_make} ${b.vehicle_model} (${b.vehicle_plate})<br>
+        <span class="text-muted" style="font-size:0.82rem">Services booked:</span>
+        <ul style="margin:4px 0 0 15px;font-size:0.85rem">${svcList}</ul>
+        <div class="text-muted" style="font-size:0.78rem;margin-top:4px">Estimate: ${inr(b.totalEstimate)}</div>
+      </div>
+      <div class="form-group">
+        <label>Labour Charges (₹)</label>
+        <input type="number" id="bLabour" value="${b.bill_labour || ''}" placeholder="e.g. 500">
+      </div>
+      <div class="form-group">
+        <label>Spare Parts Cost (₹)</label>
+        <input type="number" id="bParts" value="${b.bill_parts || ''}" placeholder="e.g. 350 (0 if none)">
+      </div>
+      <div class="form-group">
+        <label>Parts Notes <span class="text-muted">optional</span></label>
+        <input type="text" id="bNotes" value="${b.bill_notes || ''}" placeholder="e.g. Brake pads, oil filter">
+      </div>
+      <div id="billPreview" style="background:#fff3e0;padding:10px;border-radius:6px;margin-bottom:12px;font-size:0.85rem">
+        Fill amounts above to see preview
+      </div>
+      <button class="btn btn-primary btn-block" onclick="saveBill(${id})">Save Bill & Mark Completed</button>`;
+
+    // Live preview
+    ['bLabour','bParts'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateBillPreview);
+    });
+
+    document.getElementById('billModal').classList.add('open');
+  }
+
+  function updateBillPreview() {
+    const l   = parseFloat(document.getElementById('bLabour').value) || 0;
+    const p   = parseFloat(document.getElementById('bParts').value) || 0;
+    const sub = l + p;
+    const gst = Math.round(sub * 0.18 * 100) / 100;
+    const tot = Math.round((sub + gst) * 100) / 100;
+    document.getElementById('billPreview').innerHTML = `
+      <div class="bill-row"><span>Labour</span><span>${inr(l)}</span></div>
+      <div class="bill-row"><span>Parts</span><span>${inr(p)}</span></div>
+      <div class="bill-row"><span>Subtotal</span><span>${inr(sub)}</span></div>
+      <div class="bill-row" style="color:#e65100"><span>GST 18% (CGST 9% + SGST 9%)</span><span>${inr(gst)}</span></div>
+      <div class="bill-total"><span>TOTAL</span><span>${inr(tot)}</span></div>`;
+  }
+
+  async function saveBill(id) {
+    const labour = document.getElementById('bLabour').value;
+    const parts  = document.getElementById('bParts').value  || '0';
+    const notes  = document.getElementById('bNotes').value.trim();
+    if (!labour) { toast('Enter labour charges', 'error'); return; }
+
+    const { ok, data } = await api(`/admin/bookings/${id}/bill`, 'POST',
+      { bill_labour: labour, bill_parts: parts, bill_notes: notes }, true);
+
+    if (ok) {
+      toast('Bill saved!', 'success');
+      closeModal('billModal');
+      loadBookings();
+    } else {
+      toast(data.message, 'error');
+    }
+  }
+
+  // ── Invoice ────────────────────────────────────────────────
+  function showInvoice(id) {
+    const b = bookings.find(x => x.id === id);
+    if (!b) return;
+    document.getElementById('invoiceBody').innerHTML = buildInvoice(b, { full_name: b.full_name, phone: b.phone });
+    document.getElementById('invoiceModal').classList.add('open');
+  }
+
+  function downloadInvoice() {
+    const html = document.getElementById('invoiceBody').innerHTML;
+    const win  = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head>
+      <title>Invoice — Manish Auto Garage</title>
+      <style>body{font-family:Arial,sans-serif;padding:30px;color:#1a1a2e}table{width:100%;border-collapse:collapse}th{background:#1a1a2e;color:white;padding:8px 10px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #eee}</style>
+    </head><body>${html}<script>setTimeout(()=>{window.print();},500);<\/script></body></html>`);
+    win.document.close();
+  }
+
+  // ── Delete ─────────────────────────────────────────────────
+  async function deleteBooking(id) {
+    if (!confirm(`Delete booking #${id}? This cannot be undone.`)) return;
+    const { ok } = await api(`/admin/bookings/${id}`, 'DELETE', null, true);
+    if (ok) { toast('Deleted', 'success'); loadBookings(); }
+    else toast('Failed to delete', 'error');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  // Close modals on outside click
+  document.querySelectorAll('.modal-bg').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+  });
+</script>
+</body>
+</html>

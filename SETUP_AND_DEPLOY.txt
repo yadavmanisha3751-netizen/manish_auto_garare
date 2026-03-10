@@ -1,0 +1,366 @@
+# Manish Auto Garage — Setup & Deployment Guide
+# Version 4.0 | Cashfree Payment | Multi-Service | Call + GPS
+
+============================================================
+  WHAT'S NEW IN THIS VERSION
+============================================================
+
+✅ Multi-service booking  — customer can select multiple services at once
+✅ Cashfree payment       — online payment with UPI, cards, net banking
+✅ Download Invoice (PDF) — from user dashboard and admin panel
+✅ Call Admin button      — one-tap call to +91 88281 33876 from every page
+✅ GPS Map on every page  — embedded Google Maps + "Open for GPS Navigation" button
+✅ Simple HTML            — plain HTML/CSS/JS, no frameworks, easy to read
+
+
+============================================================
+  PROJECT STRUCTURE
+============================================================
+
+mag_v4/
+├── index.html             Homepage with services + map + call button
+├── login.html             OTP phone login (works for new & existing users)
+├── booking.html           Multi-service booking + call + GPS map
+├── dashboard.html         User bookings + Cashfree payment + invoice download
+├── confirmation.html      Booking confirmed page
+│
+├── admin/
+│   ├── login.html         Admin email/password login
+│   ├── dashboard.html     Stats + recent bookings
+│   └── bookings.html      Full booking management + bill + invoice + delete
+│
+├── css/style.css          All styles (simple, commented)
+├── js/app.js              Shared JS: Auth, API helper, invoice builder, toast
+│
+├── server/
+│   ├── server.js          Express server entry point
+│   ├── db.js              MySQL connection pool
+│   ├── reset-admin-password.js  ← RUN THIS ONCE after DB import
+│   ├── middleware/auth.js
+│   ├── controllers/
+│   │   ├── userController.js     OTP login via Twilio SMS
+│   │   ├── bookingController.js  Multi-service + Cashfree payment
+│   │   └── adminController.js    Admin dashboard, bills, invoice
+│   └── routes/
+│       ├── userRoutes.js
+│       ├── bookingRoutes.js
+│       └── adminRoutes.js
+│
+├── database.sql           Import this into MySQL first
+├── package.json
+└── .env                   ← Fill in your credentials here
+
+
+============================================================
+  STEP 1 — INSTALL NODE.JS (if not installed)
+============================================================
+
+Download Node.js from: https://nodejs.org (download LTS version)
+
+After install, check it works:
+  node --version    → should show v18 or v20
+  npm --version     → should show version number
+
+
+============================================================
+  STEP 2 — SETUP DATABASE (MySQL / phpMyAdmin)
+============================================================
+
+Option A — Using phpMyAdmin (XAMPP):
+  1. Open http://localhost/phpmyadmin
+  2. Click "Import" tab
+  3. Choose file: database.sql
+  4. Click "Go"
+  ✅ Database "manish_garage" is created with all tables + sample data
+
+Option B — Using MySQL command line:
+  mysql -u root -p < database.sql
+
+
+============================================================
+  STEP 3 — FILL IN YOUR SETTINGS (.env file)
+============================================================
+
+Open the .env file and fill in these values:
+
+--- Database ---
+DB_PASSWORD=           ← Your MySQL password (blank if XAMPP default)
+
+--- Twilio (for OTP SMS) ---
+Get free account at: https://www.twilio.com
+TWILIO_ACCOUNT_SID=    ← From Twilio console (starts with AC...)
+TWILIO_AUTH_TOKEN=     ← From Twilio console
+TWILIO_PHONE_NUMBER=   ← Your Twilio phone number (e.g. +918000000000)
+
+NOTE: If Twilio is not configured, the OTP will print in the
+      terminal console — you can use it manually during testing.
+
+--- Cashfree (for online payments) ---
+Get account at: https://merchant.cashfree.com
+  → Go to Developers → API Keys → copy TEST keys
+
+CASHFREE_APP_ID=       ← App ID from Cashfree dashboard
+CASHFREE_SECRET_KEY=   ← Secret key from Cashfree dashboard
+CASHFREE_BASE_URL=https://sandbox.cashfree.com   ← Keep this for testing
+
+NOTE: If Cashfree is not configured, a "DEV MODE" simulate button
+      appears — good for testing without real payment.
+
+
+============================================================
+  STEP 4 — INSTALL PACKAGES
+============================================================
+
+Open terminal / command prompt in the mag_v4 folder:
+
+  cd mag_v4
+  npm install
+
+This installs: express, mysql2, bcrypt, jwt, twilio, axios, etc.
+
+
+============================================================
+  STEP 5 — SET ADMIN PASSWORD
+============================================================
+
+Run this ONCE after importing the database:
+
+  node server/reset-admin-password.js
+
+Output will say:
+  ✅ Admin password set!
+  Email   : manish@manishautogarage.in
+  Password: admin123
+
+
+============================================================
+  STEP 6 — START THE SERVER
+============================================================
+
+Development mode (auto-restart on changes):
+  npm run dev
+
+Production mode:
+  npm start
+
+Open browser: http://localhost:3000
+
+Pages:
+  User site  → http://localhost:3000
+  Login      → http://localhost:3000/login
+  Booking    → http://localhost:3000/booking
+  Dashboard  → http://localhost:3000/dashboard
+  Admin      → http://localhost:3000/admin
+
+
+============================================================
+  CASHFREE PAYMENT — HOW IT WORKS
+============================================================
+
+1. Customer clicks "💳 Pay" on their booking
+2. Cashfree payment popup opens (UPI / Card / Net Banking)
+3. Customer pays
+4. Server verifies payment with Cashfree API
+5. Booking shows "✓ Paid" badge
+6. Invoice shows payment ID
+
+SANDBOX vs PRODUCTION:
+  Sandbox (testing) → CASHFREE_BASE_URL=https://sandbox.cashfree.com
+  Live (real money) → CASHFREE_BASE_URL=https://api.cashfree.com
+
+Also in dashboard.html line "mode: 'sandbox'" — change to 'production' for live.
+
+Test UPI ID for sandbox: success@cashfree
+Test Card: 4111 1111 1111 1111 | Any future date | Any CVV
+
+
+============================================================
+  INVOICE DOWNLOAD — HOW IT WORKS
+============================================================
+
+1. Admin generates bill (Add Bill button)
+2. User sees "🧾 Invoice" button on their booking
+3. Click Invoice → shows GST invoice popup
+4. "⬇️ Download PDF" → opens invoice in new tab → Ctrl+P → Save as PDF
+5. "🖨️ Print" → direct browser print
+
+
+============================================================
+  CALL ADMIN BUTTON — WHERE IT APPEARS
+============================================================
+
+Every page has a call button linked to: +91 88281 33876
+
+  - booking.html   → "📞 Call Admin for Help" (top of page)
+  - dashboard.html → "📞 Call Garage" (top bar + location card)
+  - admin pages    → "📞 Call" in navbar
+  - index.html     → "📞 Call Now" hero button
+
+On mobile — tapping calls directly. On desktop — shows phone number.
+
+
+============================================================
+  GPS / MAP — WHERE IT APPEARS
+============================================================
+
+Address: Near Road No. 22, Wagle Circle, Opposite Spraytech Company, Thane West 400604
+
+  - booking.html   → Embedded map + "Open in Google Maps" button
+  - dashboard.html → Embedded map + GPS Directions button
+  - index.html     → Full-width embedded map + GPS button
+
+"Open in Google Maps" opens turn-by-turn GPS navigation on mobile.
+
+
+============================================================
+  MAKING IT LIVE — DEPLOYMENT OPTIONS
+============================================================
+
+OPTION A — VPS / Cloud Server (Recommended)
+
+Providers: DigitalOcean, Hetzner, AWS EC2 (cheapest = Hetzner ~₹400/mo)
+
+Steps:
+  1. Buy VPS with Ubuntu 22.04
+  2. Install Node.js:
+       curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+       sudo apt install -y nodejs
+  3. Install MySQL:
+       sudo apt install mysql-server
+       mysql -u root -p < database.sql
+  4. Copy your project files to server (use FileZilla or SCP)
+  5. Install PM2 (keeps server running forever):
+       sudo npm install -g pm2
+       pm2 start server/server.js --name garage
+       pm2 startup
+       pm2 save
+  6. Install Nginx (web proxy):
+       sudo apt install nginx
+  7. Point your domain to the server IP
+  8. Set up SSL (HTTPS) — free with Certbot:
+       sudo apt install certbot python3-certbot-nginx
+       sudo certbot --nginx -d yourdomain.com
+
+OPTION B — Railway.app (Easy, Free Tier Available)
+
+  1. Go to https://railway.app and sign up
+  2. Click "New Project" → "Deploy from GitHub"
+  3. Push your code to GitHub first
+  4. Add a MySQL plugin in Railway
+  5. Set environment variables in Railway dashboard (same as .env)
+  6. Railway gives you a free .railway.app URL
+
+OPTION C — Render.com (Free tier)
+
+  1. Go to https://render.com
+  2. New Web Service → connect GitHub repo
+  3. Build command: npm install
+  4. Start command: npm start
+  5. Add MySQL via PlanetScale (free) or Render's managed database
+
+OPTION D — Shared Hosting (cPanel) — for existing hosting
+
+  1. Check if your hosting supports Node.js (most modern ones do)
+  2. In cPanel → "Setup Node.js App"
+  3. Upload files via File Manager
+  4. Create MySQL database in cPanel → import database.sql
+  5. Update .env with cPanel MySQL credentials
+
+Important for any live deployment:
+  - Change CASHFREE_BASE_URL to: https://api.cashfree.com
+  - Change mode: 'sandbox' to mode: 'production' in dashboard.html
+  - Set NODE_ENV=production in .env
+  - Use a real domain in Cashfree return_url (in bookingController.js)
+
+
+============================================================
+  CASHFREE — GO LIVE CHECKLIST
+============================================================
+
+1. Complete KYC on https://merchant.cashfree.com
+   (PAN card, bank account, business proof)
+
+2. Get LIVE API keys from:
+   Cashfree Dashboard → Developers → API Keys → Production
+
+3. Update .env:
+   CASHFREE_APP_ID=    ← LIVE App ID
+   CASHFREE_SECRET_KEY= ← LIVE Secret Key
+   CASHFREE_BASE_URL=https://api.cashfree.com
+
+4. Update dashboard.html:
+   Find: Cashfree({ mode: 'sandbox' })
+   Change to: Cashfree({ mode: 'production' })
+
+5. Update bookingController.js return_url:
+   Change http://localhost:3000 to https://yourdomain.com
+
+
+============================================================
+  COMMON ERRORS & FIXES
+============================================================
+
+Error: "PLACEHOLDER" password error
+  Fix: Run: node server/reset-admin-password.js
+
+Error: Cannot connect to database
+  Fix: Check DB_HOST, DB_USER, DB_PASSWORD in .env
+       Make sure MySQL is running (XAMPP → Start MySQL)
+
+Error: OTP not received
+  Fix: Check Twilio credentials in .env
+       In dev mode, OTP prints in terminal — check console
+
+Error: Payment not working
+  Fix: Check Cashfree APP_ID and SECRET_KEY in .env
+       In dev mode, click "Simulate" button to test
+
+Error: Cannot find module 'razorpay' or 'axios'
+  Fix: Run: npm install
+
+
+============================================================
+  ADMIN CREDENTIALS (default)
+============================================================
+
+URL:      http://localhost:3000/admin
+Email:    manish@manishautogarage.in
+Password: admin123
+
+Change password: Edit reset-admin-password.js, change 'admin123',
+                 then run: node server/reset-admin-password.js
+
+
+============================================================
+  API ENDPOINTS REFERENCE
+============================================================
+
+USER API (/api/users)
+  POST /send-otp          Send OTP to phone
+  POST /verify-otp        Verify OTP → get JWT token
+  GET  /profile           Get logged-in user profile
+
+BOOKING API (/api/bookings)
+  GET  /services          List all services
+  POST /create            Create booking (service_ids = array)
+  GET  /my                Get user's bookings
+  PUT  /:id/cancel        Cancel a pending booking
+  POST /:id/pay           Create Cashfree payment order
+  POST /:id/verify-payment  Verify payment after completion
+
+ADMIN API (/api/admin)
+  POST /login             Admin login
+  GET  /dashboard         Stats + recent bookings
+  GET  /bookings          All bookings (filter by status/search)
+  PUT  /bookings/:id/status   Update booking status
+  POST /bookings/:id/bill     Generate bill (calculates GST)
+  DELETE /bookings/:id        Delete booking
+
+
+============================================================
+  SUPPORT
+============================================================
+
+Garage: Manish Auto Garage
+Phone:  +91 88281 33876
+GSTIN:  27AABCU9603R1ZX

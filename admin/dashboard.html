@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Manish Auto Garage</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/admin/dashboard.html" class="brand">🔧 Admin — Manish Auto <span>Garage</span></a>
+  <div class="nav-links">
+    <a href="/admin/bookings.html">Manage Bookings</a>
+    <a href="tel:+918828133876" style="color:#4ade80">📞 Call</a>
+    <a href="#" onclick="Auth.logoutAdmin();location.href='/admin/login.html'">Logout</a>
+  </div>
+</nav>
+
+<div class="page">
+<div class="container" style="padding-top:20px">
+
+  <h2 style="color:#1a1a2e;margin-bottom:20px">Dashboard</h2>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-box"><div class="num" id="sTotal">—</div><div class="lbl">Total Bookings</div></div>
+    <div class="stat-box"><div class="num" id="sPending" style="color:#856404">—</div><div class="lbl">Pending</div></div>
+    <div class="stat-box"><div class="num" id="sProgress" style="color:#004085">—</div><div class="lbl">In Progress</div></div>
+    <div class="stat-box"><div class="num" id="sCompleted" style="color:#155724">—</div><div class="lbl">Completed</div></div>
+    <div class="stat-box"><div class="num" id="sUsers">—</div><div class="lbl">Total Users</div></div>
+    <div class="stat-box"><div class="num" id="sRevenue" style="color:#e8400a;font-size:1.4rem">—</div><div class="lbl">Revenue (Bill)</div></div>
+    <div class="stat-box"><div class="num" id="sPaid" style="color:#27ae60;font-size:1.4rem">—</div><div class="lbl">Online Paid</div></div>
+  </div>
+
+  <!-- Recent bookings -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+      <div style="font-weight:700;font-size:1.1rem">Recent Bookings</div>
+      <a href="/admin/bookings.html" class="btn btn-outline btn-sm">View All →</a>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="tbl" id="recentTbl">
+      <thead><tr>
+        <th>#ID</th><th>Customer</th><th>Services</th><th>Vehicle</th><th>Date</th><th>Status</th><th>Payment</th>
+      </tr></thead>
+      <tbody id="recentBody"><tr><td colspan="7" class="text-center text-muted" style="padding:20px">Loading...</td></tr></tbody>
+    </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+  if (!Auth.isAdmin()) location.href = '/admin/login.html';
+
+  (async () => {
+    const { ok, data } = await api('/admin/dashboard', 'GET', null, true);
+    if (!ok) { toast(data.message || 'Failed', 'error'); return; }
+    const s = data.stats;
+    document.getElementById('sTotal').textContent     = s.total;
+    document.getElementById('sPending').textContent   = s.pending;
+    document.getElementById('sProgress').textContent  = s.progress;
+    document.getElementById('sCompleted').textContent = s.completed;
+    document.getElementById('sUsers').textContent     = s.users;
+    document.getElementById('sRevenue').textContent   = inr(s.revenue);
+    document.getElementById('sPaid').textContent      = inr(s.paid);
+
+    document.getElementById('recentBody').innerHTML = (data.recent || []).map(b => `
+      <tr>
+        <td>#${b.id}</td>
+        <td><strong>${b.full_name}</strong><br><span class="text-muted">${b.phone}</span></td>
+        <td style="max-width:200px;font-size:0.82rem">${b.service_names || '—'}</td>
+        <td style="font-size:0.82rem">${b.vehicle_make} ${b.vehicle_model}<br>${b.vehicle_plate}</td>
+        <td style="font-size:0.82rem">${fdate(b.booking_date)}<br>${ftime(b.booking_time)}</td>
+        <td>${badgeHtml(b.status)}</td>
+        <td><span class="badge ${b.payment_status === 'Paid' ? 'badge-paid' : 'badge-unpaid'}">${b.payment_status}</span></td>
+      </tr>`).join('') || '<tr><td colspan="7" class="text-center text-muted">No bookings yet</td></tr>';
+  })();
+</script>
+</body>
+</html>

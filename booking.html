@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Service — Manish Auto Garage</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/" class="brand">🏍️ Manish Auto <span>Garage</span></a>
+  <div class="nav-links">
+    <a href="/dashboard.html">My Bookings</a>
+    <a href="tel:+918828133876" style="color:#4ade80;font-weight:700">📞 Call</a>
+    <a href="#" onclick="Auth.logout();location.href='/login.html'">Logout</a>
+  </div>
+</nav>
+
+<div class="page">
+<div class="container" style="padding-top:20px">
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+  <!-- LEFT: Booking form -->
+  <div>
+
+    <!-- STEP 1: Select Services -->
+    <div class="card">
+      <div class="section-title">Step 1 — Select Services (pick multiple)</div>
+
+      <!-- Call & Map buttons at top -->
+      <div style="display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap">
+        <a href="tel:+918828133876" class="contact-btn contact-btn-call" style="flex:1;min-width:180px">
+          📞 <div><strong>Call Admin for Help</strong><br><span style="font-size:0.78rem">+91 88281 33876</span></div>
+        </a>
+        <a href="https://maps.google.com/?q=Near+Road+No+22,+Wagle+Circle,+Opposite+Spraytech+Company,+Thane+West+400604" target="_blank" class="contact-btn contact-btn-map" style="flex:1;min-width:180px">
+          📍 <div><strong>Get GPS Directions</strong><br><span style="font-size:0.78rem">Wagle Circle, Thane West</span></div>
+        </a>
+      </div>
+
+      <div class="cat-tabs" id="catTabs">
+        <button class="cat-tab active" data-cat="All">All</button>
+      </div>
+      <div class="service-grid" id="serviceGrid">
+        <div class="text-muted">Loading services...</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Vehicle Details -->
+    <div class="card">
+      <div class="section-title">Step 2 — Vehicle Details</div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Vehicle Type</label>
+          <select id="vehicleType">
+            <option value="Motorcycle">🏍️ Motorcycle</option>
+            <option value="Scooter">🛵 Scooter</option>
+            <option value="Moped">🛵 Moped</option>
+            <option value="Electric Scooter">⚡ Electric Scooter</option>
+            <option value="E-Bike">⚡ E-Bike</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Brand / Make</label>
+          <input type="text" id="vehicleMake" placeholder="Honda, Bajaj, Hero..." list="brands">
+          <datalist id="brands">
+            <option value="Honda"><option value="Bajaj"><option value="Hero">
+            <option value="Royal Enfield"><option value="TVS"><option value="Yamaha">
+            <option value="Suzuki"><option value="KTM"><option value="Ather"><option value="Ola Electric">
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <input type="text" id="vehicleModel" placeholder="Activa, Bullet 350...">
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <input type="number" id="vehicleYear" placeholder="2021" min="1990" max="2026">
+        </div>
+        <div class="form-group">
+          <label>Number Plate</label>
+          <input type="text" id="vehiclePlate" placeholder="MH04AB1234" style="text-transform:uppercase">
+        </div>
+        <div class="form-group">
+          <label>Odometer (km) <span class="text-muted">optional</span></label>
+          <input type="number" id="odometer" placeholder="12500">
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Date & Time -->
+    <div class="card">
+      <div class="section-title">Step 3 — Appointment</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="bookingDate">
+        </div>
+        <div class="form-group">
+          <label>Time Slot</label>
+          <select id="bookingTime">
+            <option value="">-- Select Time --</option>
+            <option value="08:00:00">8:00 AM</option>
+            <option value="09:00:00">9:00 AM</option>
+            <option value="10:00:00">10:00 AM</option>
+            <option value="11:00:00">11:00 AM</option>
+            <option value="12:00:00">12:00 PM</option>
+            <option value="13:00:00">1:00 PM</option>
+            <option value="14:00:00">2:00 PM</option>
+            <option value="15:00:00">3:00 PM</option>
+            <option value="16:00:00">4:00 PM</option>
+            <option value="17:00:00">5:00 PM</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes / Issues <span class="text-muted">optional</span></label>
+        <textarea id="notes" rows="2" placeholder="Describe the problem — engine noise, brake issue, etc."></textarea>
+      </div>
+    </div>
+
+    <!-- Garage Location Card -->
+    <div class="card">
+      <div class="section-title">📍 Garage Location</div>
+      <p style="margin-bottom:10px;color:#555;font-size:0.9rem">
+        <strong>Manish Auto Garage</strong><br>
+        Near Road No. 22, Wagle Circle, Opposite Spraytech Company, Thane West 400604, Maharashtra<br>
+        📞 <a href="tel:+918828133876" style="color:#27ae60;font-weight:600">+91 88281 33876</a>
+      </p>
+      <!-- Embedded map — click to open Google Maps with GPS -->
+      <iframe
+        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3767.5!2d72.9781!3d19.2045!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7b8a7e7f5f5f5%3A0x0!2sWagle+Circle%2C+Thane+West%2C+Maharashtra+400604!5e0!3m2!1sen!2sin!4v1700000000001!5m2!1sen!2sin"
+        class="map-embed" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
+      <a href="https://maps.google.com/?q=Near+Road+No+22,+Wagle+Circle,+Opposite+Spraytech+Company,+Thane+West+400604" target="_blank"
+         class="btn btn-blue btn-block mt-10" style="font-size:0.88rem">
+        📱 Open in Google Maps for GPS Navigation
+      </a>
+    </div>
+
+    <button class="btn btn-primary btn-block" style="font-size:1rem;padding:14px" onclick="confirmBooking()" id="btnConfirm">
+      ✅ Confirm Booking
+    </button>
+
+  </div>
+
+  <!-- RIGHT: Cart / Summary -->
+  <div>
+    <div class="cart-box">
+      <div style="font-weight:700;font-size:1rem;margin-bottom:12px;border-bottom:2px solid #e8400a;padding-bottom:8px">🛒 Your Cart</div>
+      <div id="cartItems"><span class="text-muted">No services selected yet</span></div>
+      <div id="cartTotal" class="hidden">
+        <div class="cart-total">
+          <span>Estimated Total</span>
+          <span id="cartAmt" class="text-red">₹0.00</span>
+        </div>
+        <div class="text-muted" style="margin-top:5px;font-size:0.75rem">+18% GST applicable. Final bill after service.</div>
+      </div>
+      <hr style="margin:12px 0">
+      <a href="tel:+918828133876" style="display:flex;align-items:center;gap:8px;color:#155724;text-decoration:none;background:#d4edda;padding:8px 12px;border-radius:6px;font-weight:600;font-size:0.88rem;margin-bottom:8px">
+        📞 Call to Book / Enquire
+      </a>
+      <div class="text-muted" style="font-size:0.78rem;line-height:1.6">
+        📍 Wagle Circle, Thane West<br>
+        ⏰ Mon–Sat: 8 AM – 6 PM<br>
+        🏍️ All 2-wheeler brands
+      </div>
+    </div>
+  </div>
+  </div>
+
+</div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  if (!Auth.isLoggedIn()) location.href = '/login.html?redirect=/booking.html';
+
+  let allServices = [];
+  let selected    = new Map(); // id → service object
+
+  document.getElementById('bookingDate').min = new Date().toISOString().split('T')[0];
+
+  // Pre-fill vehicle type from user profile
+  const user = Auth.getUser();
+  if (user?.vehicle_type) document.getElementById('vehicleType').value = user.vehicle_type;
+
+  // Load services
+  (async () => {
+    const { ok, data } = await api('/bookings/services');
+    if (!ok) { toast('Failed to load services', 'error'); return; }
+    allServices = data.services;
+
+    // Build category tabs
+    const cats = ['All', ...new Set(allServices.map(s => s.category))];
+    document.getElementById('catTabs').innerHTML = cats.map((c,i) =>
+      `<button class="cat-tab ${i===0?'active':''}" data-cat="${c}" onclick="filterCat('${c}',this)">${c}</button>`
+    ).join('');
+
+    renderServices('All');
+  })();
+
+  function filterCat(cat, btn) {
+    document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderServices(cat);
+  }
+
+  function renderServices(cat) {
+    const list = cat === 'All' ? allServices : allServices.filter(s => s.category === cat);
+    document.getElementById('serviceGrid').innerHTML = list.map(s => `
+      <div class="service-item ${selected.has(s.id) ? 'selected' : ''}" id="si_${s.id}" onclick="toggleSvc(${s.id})">
+        <div class="tick">✓</div>
+        <div class="svc-name">${s.name}</div>
+        <div class="text-muted" style="font-size:0.75rem;margin:2px 0 6px">${(s.description||'').slice(0,50)}...</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="svc-price">${inr(s.price)}</span>
+          <span class="svc-time">⏱ ${s.duration_minutes}m</span>
+        </div>
+      </div>`).join('');
+  }
+
+  function toggleSvc(id) {
+    const svc = allServices.find(s => s.id === id);
+    if (selected.has(id)) selected.delete(id);
+    else selected.set(id, svc);
+    // Update card visual
+    document.getElementById('si_' + id)?.classList.toggle('selected', selected.has(id));
+    updateCart();
+  }
+
+  function updateCart() {
+    const items = [...selected.values()];
+    if (!items.length) {
+      document.getElementById('cartItems').innerHTML = '<span class="text-muted">No services selected yet</span>';
+      document.getElementById('cartTotal').classList.add('hidden');
+      return;
+    }
+    const total = items.reduce((s, i) => s + i.price, 0);
+    document.getElementById('cartItems').innerHTML = items.map(i =>
+      `<div class="cart-item"><span>${i.name}</span><span style="color:#e8400a;font-weight:600">${inr(i.price)}</span></div>`
+    ).join('');
+    document.getElementById('cartAmt').textContent = inr(total);
+    document.getElementById('cartTotal').classList.remove('hidden');
+  }
+
+  async function confirmBooking() {
+    if (!selected.size) { toast('Select at least one service', 'error'); return; }
+    if (!document.getElementById('vehicleMake').value.trim())  { toast('Enter vehicle brand/make', 'error'); return; }
+    if (!document.getElementById('vehicleModel').value.trim()) { toast('Enter vehicle model', 'error'); return; }
+    if (!document.getElementById('vehicleYear').value)         { toast('Enter vehicle year', 'error'); return; }
+    if (!document.getElementById('vehiclePlate').value.trim()) { toast('Enter number plate', 'error'); return; }
+    if (!document.getElementById('bookingDate').value)         { toast('Select date', 'error'); return; }
+    if (!document.getElementById('bookingTime').value)         { toast('Select time slot', 'error'); return; }
+
+    const btn = document.getElementById('btnConfirm');
+    btn.textContent = 'Confirming...'; btn.disabled = true;
+
+    const odo   = document.getElementById('odometer').value;
+    const notes = document.getElementById('notes').value.trim();
+
+    const { ok, data } = await api('/bookings/create', 'POST', {
+      service_ids:   [...selected.keys()],
+      vehicle_type:  document.getElementById('vehicleType').value,
+      vehicle_make:  document.getElementById('vehicleMake').value.trim(),
+      vehicle_model: document.getElementById('vehicleModel').value.trim(),
+      vehicle_year:  document.getElementById('vehicleYear').value,
+      vehicle_plate: document.getElementById('vehiclePlate').value.trim().toUpperCase(),
+      booking_date:  document.getElementById('bookingDate').value,
+      booking_time:  document.getElementById('bookingTime').value,
+      notes: [odo ? 'Odometer: '+odo+' km' : '', notes].filter(Boolean).join(' | ')
+    });
+
+    btn.textContent = '✅ Confirm Booking'; btn.disabled = false;
+
+    if (ok) {
+      localStorage.setItem('lastBookingId', data.bookingId);
+      localStorage.setItem('lastTotal',     data.totalEstimate);
+      toast('Booking confirmed! 🎉', 'success');
+      setTimeout(() => location.href = '/confirmation.html', 1200);
+    } else {
+      toast(data.message || 'Booking failed', 'error');
+    }
+  }
+</script>
+</body>
+</html>

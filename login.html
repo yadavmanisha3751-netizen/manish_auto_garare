@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Manish Auto Garage</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page">
+<div class="container">
+<div class="auth-box">
+
+  <div class="text-center" style="margin-bottom:20px">
+    <div style="font-size:3rem">🏍️</div>
+    <h2>Manish Auto Garage</h2>
+    <div class="text-muted">2 Wheeler Specialist — Thane West</div>
+  </div>
+
+  <!-- Step 1: Phone number -->
+  <div id="stepPhone">
+    <p class="text-muted" style="text-align:center;margin-bottom:15px">Enter your mobile number to login or register</p>
+
+    <!-- New user name fields (hidden by default) -->
+    <div id="newUserFields" class="hidden">
+      <div style="background:#e8f4fd;border:1px solid #bee5fd;padding:10px;border-radius:6px;margin-bottom:12px;font-size:0.85rem;color:#004085">
+        New user! Please fill in your details to register.
+      </div>
+      <div class="form-group">
+        <label>Your Full Name</label>
+        <input type="text" id="fullName" placeholder="e.g. Rahul Sharma">
+      </div>
+      <div class="form-group">
+        <label>Primary Vehicle Type</label>
+        <select id="vehicleType">
+          <option value="Motorcycle">Motorcycle</option>
+          <option value="Scooter">Scooter</option>
+          <option value="Moped">Moped</option>
+          <option value="Electric Scooter">Electric Scooter</option>
+          <option value="E-Bike">E-Bike</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Mobile Number</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div style="background:#f0f0f0;padding:10px 12px;border:1px solid #ddd;border-radius:6px;white-space:nowrap;font-weight:600">🇮🇳 +91</div>
+        <input type="tel" id="phoneInput" placeholder="98765 43210" maxlength="10" inputmode="numeric" style="flex:1">
+      </div>
+      <div class="text-muted" style="margin-top:5px">OTP will be sent to this number</div>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="sendOTP()" id="btnSend">Send OTP</button>
+
+    <div class="text-center mt-10">
+      <a href="/admin/login.html" class="text-muted" style="font-size:0.82rem">Admin Login →</a>
+    </div>
+  </div>
+
+  <!-- Step 2: OTP entry -->
+  <div id="stepOTP" class="hidden">
+    <div class="text-center" style="margin-bottom:15px">
+      <div style="font-size:2rem">📱</div>
+      <div style="font-weight:600">OTP Sent!</div>
+      <div class="text-muted">Enter 6-digit OTP sent to <strong id="showPhone" style="color:#e8400a"></strong></div>
+    </div>
+
+    <div class="otp-boxes">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric">
+      <input class="otp-box" type="tel" maxlength="1" inputmode="numeric">
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="verifyOTP()" id="btnVerify">Verify &amp; Login</button>
+
+    <div class="text-center mt-10">
+      <button onclick="goBack()" style="background:none;border:none;color:#888;cursor:pointer;font-size:0.85rem">← Change Number</button>
+      &nbsp;|&nbsp;
+      <button onclick="sendOTP()" id="btnResend" style="background:none;border:none;color:#e8400a;cursor:pointer;font-size:0.85rem">Resend OTP <span id="resendTimer"></span></button>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  if (Auth.isLoggedIn()) window.location.href = '/dashboard.html';
+
+  let currentPhone = '';
+  let isNewUser    = false;
+
+  // Only allow digits in phone
+  document.getElementById('phoneInput').addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, '').slice(0, 10);
+  });
+
+  async function sendOTP() {
+    const digits = document.getElementById('phoneInput').value.replace(/\D/g,'');
+    const phone  = '+91' + digits.slice(-10);
+    if (digits.length < 10) { toast('Enter 10-digit mobile number', 'error'); return; }
+
+    const name    = document.getElementById('fullName')?.value.trim();
+    const vtype   = document.getElementById('vehicleType')?.value;
+    const payload = { phone };
+    if (name)  payload.full_name    = name;
+    if (vtype) payload.vehicle_type = vtype;
+
+    document.getElementById('btnSend').textContent = 'Sending...';
+    document.getElementById('btnSend').disabled = true;
+
+    const { ok, data } = await api('/users/send-otp', 'POST', payload);
+
+    document.getElementById('btnSend').textContent = 'Send OTP';
+    document.getElementById('btnSend').disabled = false;
+
+    if (!ok) {
+      if (data.newUser) {
+        document.getElementById('newUserFields').classList.remove('hidden');
+        toast('New user — enter your name first', 'info');
+        return;
+      }
+      toast(data.message, 'error');
+      return;
+    }
+
+    currentPhone = phone;
+    isNewUser    = data.newUser;
+    if (data.devOtp) toast('DEV MODE — OTP: ' + data.devOtp, 'info');
+
+    // Switch to OTP step
+    document.getElementById('stepPhone').classList.add('hidden');
+    document.getElementById('stepOTP').classList.remove('hidden');
+    document.getElementById('showPhone').textContent = phone;
+    document.querySelectorAll('.otp-box')[0].focus();
+    startResendTimer();
+  }
+
+  async function verifyOTP() {
+    const otp = [...document.querySelectorAll('.otp-box')].map(b => b.value).join('');
+    if (otp.length !== 6) { toast('Enter complete 6-digit OTP', 'error'); return; }
+
+    const payload = { phone: currentPhone, otp };
+    const name    = document.getElementById('fullName')?.value.trim();
+    const vtype   = document.getElementById('vehicleType')?.value;
+    if (name)  payload.full_name    = name;
+    if (vtype) payload.vehicle_type = vtype;
+
+    document.getElementById('btnVerify').textContent = 'Verifying...';
+    document.getElementById('btnVerify').disabled = true;
+
+    const { ok, data } = await api('/users/verify-otp', 'POST', payload);
+
+    document.getElementById('btnVerify').textContent = 'Verify & Login';
+    document.getElementById('btnVerify').disabled = false;
+
+    if (ok) {
+      Auth.setToken(data.token);
+      Auth.setUser(data.user);
+      toast('Welcome, ' + data.user.full_name + '!', 'success');
+      const rd = new URLSearchParams(location.search).get('redirect');
+      setTimeout(() => location.href = rd || '/dashboard.html', 1000);
+    } else {
+      toast(data.message, 'error');
+    }
+  }
+
+  function goBack() {
+    document.getElementById('stepOTP').classList.add('hidden');
+    document.getElementById('stepPhone').classList.remove('hidden');
+  }
+
+  // OTP box auto-advance
+  document.querySelectorAll('.otp-box').forEach((box, i, all) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/\D/g,'').slice(-1);
+      if (box.value && i < all.length - 1) all[i+1].focus();
+    });
+    box.addEventListener('keydown', e => { if (e.key === 'Backspace' && !box.value && i > 0) all[i-1].focus(); });
+    box.addEventListener('paste', e => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
+      text.split('').slice(0,6).forEach((d,j) => { if(all[j]) all[j].value = d; });
+    });
+  });
+
+  let timerInterval;
+  function startResendTimer() {
+    let t = 30;
+    document.getElementById('btnResend').disabled = true;
+    document.getElementById('resendTimer').textContent = `(${t}s)`;
+    timerInterval = setInterval(() => {
+      t--;
+      document.getElementById('resendTimer').textContent = t > 0 ? `(${t}s)` : '';
+      if (t <= 0) { clearInterval(timerInterval); document.getElementById('btnResend').disabled = false; }
+    }, 1000);
+  }
+</script>
+</body>
+</html>
