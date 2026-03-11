@@ -3,8 +3,8 @@
 -- Run: node server/reset-admin-password.js  after import
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS manish_garage;
-USE manish_garage;
+CREATE DATABASE IF NOT EXISTS railway;
+USE railway;
 
 -- Admin table
 CREATE TABLE IF NOT EXISTS admin (
