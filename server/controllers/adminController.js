@@ -1,20 +1,46 @@
 // server/controllers/adminController.js
-//const bcrypt = require('bcrypt');
+//const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const db     = require('../db');
-const bcrypt = require('bcryptjs');
+//const bcrypt = require('bcryptjs');
+
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
+
         const [rows] = await db.query('SELECT * FROM admin WHERE email=?', [email]);
-        if (!rows.length) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-        if (rows[0].password === 'PLACEHOLDER')
-            return res.status(401).json({ success: false, message: 'Run: node server/reset-admin-password.js to set password.' });
-        const ok = await bcrypt.compare(password, rows[0].password);
-        if (!ok) return res.status(401).json({ success: false, message: 'Invalid credentials.' });
-        const token = jwt.sign({ id: rows[0].id, email: rows[0].email, role: 'admin' }, process.env.JWT_SECRET, { expiresIn: '24h' });
-        res.json({ success: true, token, admin: { id: rows[0].id, username: rows[0].username, email: rows[0].email } });
-    } catch (e) { res.status(500).json({ success: false, message: 'Server error.' }); }
+
+        if (!rows.length) {
+            return res.status(401).json({ success:false, message:'Admin not found' });
+        }
+
+        // 🔑 FIXED PASSWORD
+        const FIXED_PASSWORD = "admin123";
+
+        if (password !== FIXED_PASSWORD) {
+            return res.status(401).json({ success:false, message:'Wrong password' });
+        }
+
+        const token = jwt.sign(
+            { id: rows[0].id, email: rows[0].email, role: "admin" },
+            process.env.JWT_SECRET || "secretkey",
+            { expiresIn: "24h" }
+        );
+
+        res.json({
+            success: true,
+            token,
+            admin: {
+                id: rows[0].id,
+                username: rows[0].username,
+                email: rows[0].email
+            }
+        });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success:false, message:'Server error' });
+    }
 };
 
 exports.logout = (req, res) => res.json({ success: true });
