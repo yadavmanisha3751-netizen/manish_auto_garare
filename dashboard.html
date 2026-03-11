@@ -14,7 +14,7 @@
   <a href="/" class="brand">🏍️ Manish Auto <span>Garage</span></a>
   <div class="nav-links">
     <a href="/booking.html">+ New Booking</a>
-    <a href="tel:+918828133876" style="color:#4ade80;font-weight:700">📞 Call</a>
+    <a href="tel:+919867703767" style="color:#4ade80;font-weight:700">📞 Call</a>
     <a href="#" onclick="Auth.logout();location.href='/login.html'">Logout</a>
   </div>
 </nav>
@@ -29,7 +29,7 @@
       <div class="text-muted" id="userWelcome">Loading...</div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <a href="tel:+918828133876" class="btn btn-green">📞 Call Garage</a>
+      <a href="tel:+919867703767" class="btn btn-green">📞 Call Garage</a>
       <a href="https://maps.google.com/?q=Near+Road+No+22,+Wagle+Circle,+Opposite+Spraytech+Company,+Thane+West+400604" target="_blank" class="btn btn-blue">📍 Directions</a>
       <a href="/booking.html" class="btn btn-primary">+ New Booking</a>
     </div>
@@ -58,7 +58,7 @@
   <div class="card no-print">
     <div class="section-title">📍 Garage Location</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <a href="tel:+918828133876" class="contact-btn contact-btn-call">
+      <a href="tel:+919867703767" class="contact-btn contact-btn-call">
         📞 <div><strong>Call Admin</strong><br><span style="font-size:0.78rem">+91 88281 33876</span></div>
       </a>
       <a href="https://maps.google.com/?q=Near+Road+No+22,+Wagle+Circle,+Opposite+Spraytech+Company,+Thane+West+400604" target="_blank" class="contact-btn contact-btn-map">
@@ -166,7 +166,7 @@
             ${hasBill && !isPaid ? `<button onclick="payNow(${b.id})" class="btn btn-green btn-sm">💳 Pay ${inr(b.bill_amount)}</button>` : ''}
             ${!hasBill && !isPaid ? `<span style="font-size:0.75rem;color:#856404">⏳ Bill pending from admin</span>` : ''}
             ${b.status === 'Pending' ? `<button onclick="cancelBooking(${b.id})" class="btn btn-red btn-sm">Cancel</button>` : ''}
-            <a href="tel:+918828133876" class="btn btn-outline btn-sm" style="text-decoration:none;color:#27ae60;border-color:#27ae60">📞 Call</a>
+            <a href="tel:+919867703767" class="btn btn-outline btn-sm" style="text-decoration:none;color:#27ae60;border-color:#27ae60">📞 Call</a>
           </div>
         </div>
 
