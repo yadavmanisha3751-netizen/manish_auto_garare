@@ -88,7 +88,8 @@ function buildInvoice(b, userInfo) {
     const parts    = parseFloat(b.bill_parts  || 0);
     const gst      = parseFloat(b.bill_gst    || 0);
     const total    = parseFloat(b.bill_amount || 0);
-    const subtotal = labour + parts;
+    const svcTotal = (b.services || []).reduce((sum, s) => sum + parseFloat(s.price_at_booking || 0), 0);
+    const subtotal = svcTotal + labour + parts;
     const svcRows  = (b.services || []).map(s =>
         `<tr><td>${s.service_name || s.name}</td><td style="text-align:right">${inr(s.price_at_booking)}</td></tr>`).join('');
     const isPaid = b.payment_status === 'Paid';
