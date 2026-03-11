@@ -133,7 +133,7 @@
       const isPaid    = b.payment_status === 'Paid';
       const hasBill   = !!b.bill_amount;
       const amount    = hasBill ? b.bill_amount : b.totalEstimate;
-      const amtLabel  = hasBill ? 'Final Bill' : 'Estimate';
+      const amtLabel  = hasBill ? '✅ Final Bill' : '📋 Estimate (bill pending)';
 
       return `
       <div style="border:1px solid #e0e0e0;border-radius:8px;padding:15px;margin-bottom:12px;background:#fafafa">
@@ -163,7 +163,8 @@
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             ${hasBill ? `<button onclick="showInvoice(${b.id})" class="btn btn-outline btn-sm">🧾 Invoice</button>` : ''}
-            ${!isPaid ? `<button onclick="payNow(${b.id})" class="btn btn-green btn-sm">💳 Pay ₹${parseFloat(amount).toFixed(0)}</button>` : ''}
+            ${hasBill && !isPaid ? `<button onclick="payNow(${b.id})" class="btn btn-green btn-sm">💳 Pay ${inr(b.bill_amount)}</button>` : ''}
+            ${!hasBill && !isPaid ? `<span style="font-size:0.75rem;color:#856404">⏳ Bill pending from admin</span>` : ''}
             ${b.status === 'Pending' ? `<button onclick="cancelBooking(${b.id})" class="btn btn-red btn-sm">Cancel</button>` : ''}
             <a href="tel:+918828133876" class="btn btn-outline btn-sm" style="text-decoration:none;color:#27ae60;border-color:#27ae60">📞 Call</a>
           </div>
